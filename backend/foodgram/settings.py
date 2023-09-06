@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'drf_yasg',
+    'djoser',
     'api',
     'users',
     'recipes',
@@ -104,6 +105,20 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+DJOSER = {
+    'USER_CREATE_PASSWORD_RETYPE': False,
+    'SET_PASSWORD_RETYPE': False,
+    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
+    'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
+    'ACTIVATION_URL': 'activate/{uid}/{token}',
+    'SEND_ACTIVATION_EMAIL': True,
+    'SERIALIZERS': {
+        'user_create': 'users.serializers.UserCreateSerializer',
+        'user': 'user.serializers.UserSerializer',
+        'current_user': 'your_app.serializers.CurrentUserSerializer',
+    },
+}
 
 
 LANGUAGE_CODE = 'en-us'
