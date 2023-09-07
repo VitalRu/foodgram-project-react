@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets
 from .models import User
 from .serializers import UserSerializer, UserCreateSerializer
 
@@ -6,7 +6,6 @@ from .serializers import UserSerializer, UserCreateSerializer
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_object(self):
         if self.kwargs.get('pk') == 'me':

@@ -6,11 +6,7 @@ from django.db import models
 class User(AbstractUser):
     """Кастомная модель пользователя."""
 
-    email = models.CharField(
-        max_length=254,
-        unique=True,
-        validators=[RegexValidator(r'^\S+@\S+\.\S+$', 'Invalid email adress!')]
-    )
+    email = models.EmailField('email address', unique=True)
     username = models.CharField(
         max_length=150,
         unique=True,
@@ -19,6 +15,9 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     password = models.CharField(max_length=150)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
     @property
     def get_full_name(self):
