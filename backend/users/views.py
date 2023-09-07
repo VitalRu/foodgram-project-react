@@ -1,20 +1,19 @@
-# from rest_framework import generics
-# from rest_framework.response import Response
-# from rest_framework.permissions import AllowAny
-# from .serializers import UserCreateSerializer
+from rest_framework import viewsets, permissions
+from .models import User
+from .serializers import UserSerializer, UserCreateSerializer
 
 
-# class UserCreateView(generics.CreateAPIView):
-#     permission_classes = [AllowAny]
-#     serializer_class = UserCreateSerializer
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-#     def create(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         user = serializer.save()
-#         return Response({
-#             'user': UserCreateSerializer(
-#                 user, context=self.get_serializer_context()
-#             ).data,
-#             'message': 'User created successfully.',
-#         })
+    def get_object(self):
+        if self.kwargs.get('pk') == 'me':
+            return self.request.user
+        return super().get_object()
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserCreateSerializer
+        return UserSerializer

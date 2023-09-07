@@ -14,7 +14,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=150,
         unique=True,
-        validators=[RegexValidator(r'^[\w.@+-]+\z', 'Invalid username!')]
+        validators=[RegexValidator(r'^[\w.@+-]+$', 'Invalid username!')]
     )
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
