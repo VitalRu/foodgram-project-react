@@ -87,6 +87,9 @@ else:
 
 
 REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ]
@@ -109,13 +112,13 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 DJOSER = {
+    'AUTH_TOKEN_MODEL': 'authtoken.Token',
     'LOGIN_FIELD': 'email',
     'SERIALIZERS': {
-        'user_create': 'users.serializers.UserCreateSerializer',
-        'user': 'users.serializers.UserSerializer',
-        'current_user': 'users.serializers.UserSerializer',
-    },
-    'AUTH_TOKEN_MODEL': 'authtoken.Token',
+        'user_create': 'api.serializers.UserCreateSerializer',
+        'user': 'api.serializers.UserSerializer',
+        'current_user': 'api.serializers.UserSerializer',
+    }
 }
 
 
