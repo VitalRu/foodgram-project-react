@@ -24,9 +24,5 @@ urlpatterns = [
         schema_view.with_ui('swagger', cache_timeout=0),
         name='schema-swagger-ui'
     ),
-    path('admin/', admin.site.urls),
-    path('api/', include('recipes.urls')),
-    path('api/', include('users.urls')),
-    path('api/auth/', include('djoser.urls')),
-    path('api/auth/', include('djoser.urls.authtoken')),
+    path('admin/', admin.site.urls),    
 ]
