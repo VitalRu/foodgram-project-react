@@ -17,7 +17,7 @@ class User(AbstractUser):
     password = models.CharField(max_length=150)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     @property
     def get_full_name(self):
@@ -33,3 +33,37 @@ class User(AbstractUser):
         ordering = ['id']
         verbose_name = 'User'
         verbose_name_plural = 'Users'
+
+
+class Follow(models.Model):
+    """Модель подписок."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='Подписавшийся пользователь',
+        help_text='Подписчик',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='Пользователь, на которого подписались',
+        help_text='Автор',
+    )
+
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'author'),
+                name='unique_pair'
+            ),
+            models.CheckConstraint(
+                check=~models.Q(author=models.F('user')),
+                name='author_not_user'
+            ),
+        )
+
+    def __str__(self):
+        return f'{self.user} подписан на {self.author}'
