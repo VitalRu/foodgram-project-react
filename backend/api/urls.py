@@ -8,10 +8,9 @@ app_name = 'api'
 
 router = DefaultRouter()
 
-router.register(r'users', UserViewSet, basename='users')
+router.register('users', UserViewSet, basename='users')
 
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include('djoser.urls.authtoken')),
-    path('', include('djoser.urls'))
 ]

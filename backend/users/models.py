@@ -17,7 +17,7 @@ class User(AbstractUser):
     password = models.CharField(max_length=150)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['username', 'password', 'first_name', 'last_name']
 
     @property
     def get_full_name(self):
