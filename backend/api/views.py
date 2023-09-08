@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from djoser.serializers import SetPasswordSerializer
-from rest_framework import status, viewsets
+from djoser.views import UserViewSet as DjoserViewSet
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +11,7 @@ from .serializers import FollowSerializer, UserCreateSerializer, UserSerializer
 from users.models import Follow, User
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(DjoserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated,)
@@ -31,7 +32,7 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(('POST', 'DELETE',), detail=True)
+    @action(('POST', 'DELETE'), detail=True,)
     def subscribe(self, request, id):
         author = get_object_or_404(User, id=id)
         if request.method == 'POST':
@@ -46,8 +47,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 )
             return Response(
                 serializer.data,
-                f'You following {author.username}',
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
         elif request.method == 'DELETE':
             follow = Follow.objects.filter(
@@ -80,10 +80,3 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_204_NO_CONTENT
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(('GET',), detail=False, permission_classes=[IsAuthenticated])
-    def me(self, request):
-        serializer = UserSerializer(
-            self.request.user, context={'request': request}
-        )
-        return Response(serializer.data)
