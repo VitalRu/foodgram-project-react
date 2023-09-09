@@ -1,14 +1,18 @@
 from django.core.exceptions import ValidationError
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet as DjoserViewSet
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .serializers import FollowSerializer, UserCreateSerializer, UserSerializer
+from .serializers import (
+    FollowSerializer, IngredientSerializer, TagSerializer,
+    UserCreateSerializer, UserSerializer,
+)
 from users.models import Follow, User
+from recipes.models import Ingredient, Tag
 
 
 class UserViewSet(DjoserViewSet):
@@ -21,9 +25,7 @@ class UserViewSet(DjoserViewSet):
             return UserCreateSerializer
         return UserSerializer
 
-    @action(
-        ('GET',), detail=False, permission_classes=(IsAuthenticated,)
-    )
+    @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
         queryset = Follow.objects.filter(user=self.request.user)
         page = self.paginate_queryset(queryset)
@@ -80,3 +82,13 @@ class UserViewSet(DjoserViewSet):
                 status=status.HTTP_204_NO_CONTENT
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IngredientViewSet(viewsets.ModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer

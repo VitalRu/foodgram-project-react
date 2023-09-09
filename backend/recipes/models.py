@@ -14,11 +14,11 @@ class Ingredient(models.Model):
         verbose_name='Единица измерения'
     )
 
-    class Meta:
-        ordering = ['name']
-
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ['name']
 
 
 class Tag(models.Model):
@@ -41,6 +41,12 @@ class Tag(models.Model):
             )
         ]
     )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
 
 
 class Recipe(models.Model):
@@ -75,6 +81,9 @@ class Recipe(models.Model):
     pub_date = models.DateTimeField(
         auto_now_add=True
     )
+
+    def __str__(self):
+        return self.name
 
     class Meta:
         ordering = ('-pub_date',)
