@@ -7,7 +7,6 @@ from users.models import User
 class Ingredient(models.Model):
     name = models.CharField(
         max_length=200,
-        unique=True
     )
     measurement_unit = models.CharField(
         max_length=200,
@@ -19,6 +18,12 @@ class Ingredient(models.Model):
 
     class Meta:
         ordering = ['name']
+        constraints = (
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='unique_name_measurement_unit'
+            ),
+        )
 
 
 class Tag(models.Model):
