@@ -1,5 +1,6 @@
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
-from django.core.validators import RegexValidator
+
 from users.models import User
 
 
@@ -21,7 +22,7 @@ class Ingredient(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=True)
+    name = models.CharField(max_length=200)
     color = models.CharField(
         max_length=7,
         validators=[
@@ -47,6 +48,7 @@ class Recipe(models.Model):
         User,
         related_name='recipe',
         verbose_name='автор рецепта',
+        on_delete=models.CASCADE,
     )
     name = models.CharField(
         max_length=200,
@@ -59,7 +61,7 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(
         Tag,
         related_name='recipe',
-        through='TagInRecipe',
+        through='TagsInRecipe',
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -67,7 +69,9 @@ class Recipe(models.Model):
         through='IngredientsInRecipe'
     )
     text = models.TextField()
-    cooking_time = models.PositiveIntegerField()
+    cooking_time = models.PositiveIntegerField(
+        validators=[MinValueValidator(limit_value=1)]
+    )
     pub_date = models.DateTimeField(
         auto_now_add=True
     )
@@ -87,19 +91,21 @@ class TagsInRecipe(models.Model):
             models.UniqueConstraint(
                 fields=('tag', 'recipe'),
                 name='unique_tag_recipe'
-            )
+            ),
         )
 
 
 class IngredientsInRecipe(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    amount = models.PositiveIntegerField()
+    amount = models.PositiveIntegerField(
+        validators=[MinValueValidator(limit_value=1)]
+    )
 
     class Meta:
         constraints = (
             models.UniqueConstraint(
                 fields=('ingredient', 'recipe'),
                 name='unique_ingredient_recipe'
-            )
+            ),
         )
