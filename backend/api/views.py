@@ -9,10 +9,10 @@ from rest_framework.response import Response
 
 from .serializers import (
     FollowSerializer, IngredientSerializer, TagSerializer,
-    UserCreateSerializer, UserSerializer,
+    UserCreateSerializer, UserSerializer, RecipeSerializer
 )
 from users.models import Follow, User
-from recipes.models import Ingredient, Tag
+from recipes.models import Ingredient, Tag, Recipe
 
 
 class UserViewSet(DjoserViewSet):
@@ -92,3 +92,8 @@ class IngredientViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import Ingredient, Tag
+from recipes.models import Ingredient, Tag, Recipe, TagsInRecipe
 from users.models import Follow, User
 
 
@@ -76,3 +76,27 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True)
+    author = UserSerializer(
+        read_only=True, default=serializers.CurrentUserDefault()
+    )
+    ingredients = IngredientSerializer(many=True)
+
+    def create(self, validated_data):
+        tags = validated_data.pop('tags')
+        recipe = Recipe.objects.create(**validated_data)
+
+        for tag in tags:
+            current_tag, status = Tag.objects.get_or_create(**tag)
+            TagsInRecipe.objects.create(tag=current_tag, recipe=recipe)
+        return recipe
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id', 'tags', 'author', 'ingredients', 'name', 'image', 'text',
+            'cooking_time'
+        )
