@@ -4,15 +4,16 @@ from djoser.views import UserViewSet as DjoserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 
+from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (
-    FollowSerializer, IngredientSerializer, TagSerializer,
-    UserCreateSerializer, UserSerializer, RecipeSerializer
+    FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
+    RecipeSerializer, TagSerializer, UserCreateSerializer, UserSerializer,
 )
+from recipes.models import Ingredient, Recipe, Tag
 from users.models import Follow, User
-from recipes.models import Ingredient, Tag, Recipe
 
 
 class UserViewSet(DjoserViewSet):
@@ -87,13 +88,24 @@ class UserViewSet(DjoserViewSet):
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = (IsAdminOrReadOnly)
 
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (IsAdminOrReadOnly)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    permission_classes = (IsOwnerOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.request.method in SAFE_METHODS:
+            return RecipeSerializer
+        return RecipeCreateSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)

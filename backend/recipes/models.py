@@ -17,7 +17,7 @@ class Ingredient(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['name']
+        ordering = ['id']
         constraints = (
             models.UniqueConstraint(
                 fields=('name', 'measurement_unit'),
@@ -51,7 +51,7 @@ class Tag(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['name']
+        ordering = ['id']
 
 
 class Recipe(models.Model):
@@ -66,7 +66,7 @@ class Recipe(models.Model):
         unique=True,
     )
     image = models.ImageField(
-        upload_to='images/recipes',
+        upload_to='recipes/images',
         default=None,
     )
     tags = models.ManyToManyField(

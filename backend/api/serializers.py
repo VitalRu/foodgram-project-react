@@ -1,8 +1,23 @@
+import base64
+
+from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import Ingredient, Tag, Recipe, TagsInRecipe
+from recipes.models import (
+    Ingredient, IngredientsInRecipe, Recipe, Tag, TagsInRecipe,
+)
 from users.models import Follow, User
+
+
+class Base64ImageField(serializers.ImageField):
+    def to_internal_value(self, data):
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+
+        return super().to_internal_value(data)
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -78,21 +93,53 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'slug')
 
 
+class RecipeCreateSerializer(serializers.ModelSerializer):
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Tag.objects.all()
+    )
+    author = UserSerializer
+    ingredients = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Ingredient.objects.all()
+    )
+    image = Base64ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = '__all__'
+        read_only_fields = ('author',)
+
+    def create(self, validated_data):
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        recipe = Recipe.objects.create(**validated_data)
+
+        for tag in tags:
+            current_tag, status = Tag.objects.get_or_create(**tag)
+            TagsInRecipe.objects.create(tag=current_tag, recipe=recipe)
+
+        for ingredient in ingredients:
+            current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
+            IngredientsInRecipe.objects.create(
+                ingredient=current_ingredient,
+                recipe=recipe,
+                amount=ingredient['amount']
+            )
+        return recipe
+
+    def validate(self, data):
+        if not data['tags']:
+            raise serializers.ValidationError('At least one Tag is required')
+        if not data['ingredients']:
+            raise serializers.ValidationError('Ingredients are required')
+        return data
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     author = UserSerializer(
         read_only=True, default=serializers.CurrentUserDefault()
     )
     ingredients = IngredientSerializer(many=True)
-
-    def create(self, validated_data):
-        tags = validated_data.pop('tags')
-        recipe = Recipe.objects.create(**validated_data)
-
-        for tag in tags:
-            current_tag, status = Tag.objects.get_or_create(**tag)
-            TagsInRecipe.objects.create(tag=current_tag, recipe=recipe)
-        return recipe
 
     class Meta:
         model = Recipe
