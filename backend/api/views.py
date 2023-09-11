@@ -18,14 +18,30 @@ from users.models import Follow, User
 
 
 class UserViewSet(DjoserViewSet):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return User.objects.all()
 
     def get_serializer_class(self):
         if self.action == 'create':
             return UserCreateSerializer
         return UserSerializer
+
+    @action(('POST',), detail=False, permission_classes=(IsAuthenticated,))
+    def set_password(self, request, *args, **kwargs):
+        serializer = SetPasswordSerializer(
+            data=request.data, context={'request': request}
+        )
+        if serializer.is_valid(raise_exception=True):
+            self.request.user.set_password(serializer.data['new_password'])
+            self.request.user.save()
+            return Response(
+                'Password changed successfully',
+                status=status.HTTP_204_NO_CONTENT
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
@@ -37,8 +53,8 @@ class UserViewSet(DjoserViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(('POST', 'DELETE'), detail=True,)
-    def subscribe(self, request, pk=None):
-        author = get_object_or_404(User, id=pk)
+    def subscribe(self, request, id=None):
+        author = get_object_or_404(User, id=id)
         if request.method == 'POST':
             if request.user.id == author.id:
                 raise ValidationError(
@@ -70,20 +86,6 @@ class UserViewSet(DjoserViewSet):
             {'errors': 'Invalid operation'},
             status=status.HTTP_400_BAD_REQUEST,
         )
-
-    @action(('POST',), detail=False, permission_classes=(IsAuthenticated,))
-    def set_password(self, request, *args, **kwargs):
-        serializer = SetPasswordSerializer(
-            data=request.data, context={'request': request}
-        )
-        if serializer.is_valid(raise_exception=True):
-            self.request.user.set_password(serializer.data['new_password'])
-            self.request.user.save()
-            return Response(
-                'Password changed successfully',
-                status=status.HTTP_204_NO_CONTENT
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
