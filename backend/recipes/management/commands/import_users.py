@@ -2,7 +2,7 @@ import csv
 
 from django.core.management.base import BaseCommand
 
-from recipes.models import Tag
+from recipes.models import User
 
 
 PATH = '../data/'
@@ -12,25 +12,27 @@ class Command(BaseCommand):
     help = 'import data from ingredients.csv'
 
     def handle(self, *args, **kwargs):
-        with open(f'{PATH}/tags.csv', encoding='utf-8') as file:
+        with open(f'{PATH}/example_users.csv', encoding='utf-8') as file:
             reader = csv.reader(file)
 
             for row in reader:
                 print(row)
 
-                tag, created = Tag.objects.get_or_create(
-                    name=row[0],
-                    color=row[1],
-                    slug=row[2],
+                user, created = User.objects.get_or_create(
+                    email=row[0],
+                    username=row[1],
+                    first_name=row[2],
+                    last_name=row[3],
+                    password=row[4]
                 )
 
                 if created:
                     self.stdout.write(self.style.SUCCESS(
-                        f'Tag {tag.name} created'
+                        f'User {user.username} created'
                     ))
                 else:
                     self.stdout.write(self.style.WARNING(
-                        f'Tag {tag.name} already exists'
+                        f'User {user.username} already exists'
                     ))
 
             self.stdout.write(self.style.SUCCESS(

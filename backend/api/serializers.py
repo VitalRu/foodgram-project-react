@@ -3,21 +3,12 @@ import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+from django.db.transaction import atomic
 
 from recipes.models import (
-    Ingredient, IngredientsInRecipe, Recipe, Tag, TagsInRecipe,
+    Ingredient, IngredientsInRecipe, Recipe, Tag
 )
 from users.models import Follow, User
-
-
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-
-        return super().to_internal_value(data)
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -93,45 +84,113 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'slug')
 
 
-class RecipeCreateSerializer(serializers.ModelSerializer):
-    tags = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Tag.objects.all()
+class IngredientInRecipeSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
     )
-    author = UserSerializer
-    ingredients = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Ingredient.objects.all()
+
+    class Meta:
+        model = IngredientsInRecipe
+        fields = ('id', 'name', 'measurement_unit', 'amount')
+        validators = (
+            UniqueTogetherValidator(
+                queryset=IngredientsInRecipe.objects.all(),
+                fields=('recipe', 'ingredient',)
+            ),
+        )
+
+
+class AddIngredientSerializer(serializers.ModelSerializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    amount = serializers.IntegerField()
+
+    class Meta:
+        model = IngredientsInRecipe
+        fields = ('id', 'amount')
+
+
+class Base64ImageField(serializers.ImageField):
+    def to_internal_value(self, data):
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+
+        return super().to_internal_value(data)
+
+
+class RecipeCreateSerializer(serializers.ModelSerializer):
+    ingredients = AddIngredientSerializer(many=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), many=True
     )
     image = Base64ImageField()
 
     class Meta:
         model = Recipe
-        fields = '__all__'
+        fields = (
+            'id', 'image', 'tags', 'author', 'ingredients', 'name', 'text',
+            'cooking_time'
+        )
         read_only_fields = ('author',)
 
-    def create(self, validated_data):
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(**validated_data)
-
-        for tag in tags:
-            current_tag, status = Tag.objects.get_or_create(**tag)
-            TagsInRecipe.objects.create(tag=current_tag, recipe=recipe)
-
+    def validate(self, data):
+        cooking_time = int(self.initial_data['cooking_time'])
+        if cooking_time < 1:
+            raise serializers.ValidationError({
+                'Minimum cooking_time value must be equal 1.'
+            })
+        ingredients = data['ingredients']
+        unique_ingredients = set()
         for ingredient in ingredients:
-            current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
+            current_ingredient = ingredient['id']
+            amount = ingredient['amount']
+            if current_ingredient in unique_ingredients:
+                raise serializers.ValidationError(
+                    'No duplicate ingredients'
+                )
+            if amount < 1:
+                raise serializers.ValidationError({
+                    'Minimum number of ingredients must be equal 1'
+                })
+            unique_ingredients.add(current_ingredient)
+        return data
+
+    def add_ingredients(self, ingredients, recipe):
+        for ingredient in ingredients:
             IngredientsInRecipe.objects.create(
-                ingredient=current_ingredient,
                 recipe=recipe,
-                amount=ingredient['amount']
+                ingredient=ingredient.get('id'),
+                amount=ingredient.get('amount'),
             )
+
+    @atomic
+    def create(self, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        recipe = super().create(validated_data)
+        recipe.tags.set(tags)
+        self.add_ingredients(ingredients, recipe)
         return recipe
 
-    def validate(self, data):
-        if not data['tags']:
-            raise serializers.ValidationError('At least one Tag is required')
-        if not data['ingredients']:
-            raise serializers.ValidationError('Ingredients are required')
-        return data
+    @atomic
+    def update(self, obj, validated_data):
+        if 'ingredients' in validated_data:
+            ingredients = validated_data.pop('ingredients')
+            obj.ingredients.clear()
+            self.add_ingredients(ingredients, obj)
+
+        if 'tags' in validated_data:
+            tags = validated_data.pop('tags')
+            obj.tags.set(tags)
+
+        return super().update(obj, validated_data)
+
+    def to_representation(self, instance):
+        serializer = RecipeSerializer(instance)
+        return serializer.data
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -139,7 +198,10 @@ class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(
         read_only=True, default=serializers.CurrentUserDefault()
     )
-    ingredients = IngredientSerializer(many=True)
+    ingredients = IngredientInRecipeSerializer(
+        many=True, required=True, source='recipe'
+    )
+    image = Base64ImageField()
 
     class Meta:
         model = Recipe

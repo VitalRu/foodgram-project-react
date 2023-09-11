@@ -88,19 +88,25 @@ class UserViewSet(DjoserViewSet):
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = (IsAdminOrReadOnly)
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = (IsAdminOrReadOnly)
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = (IsOwnerOrReadOnly,)
+
+    def get_queryset(self):
+        queryset = Recipe.objects.select_related('author').prefetch_related(
+            'tags', 'ingredients', 'recipe'
+        )
+        return queryset
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
