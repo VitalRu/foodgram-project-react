@@ -12,7 +12,7 @@ from .serializers import (
     FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
     RecipeSerializer, TagSerializer, UserCreateSerializer, UserSerializer,
 )
-from recipes.models import Ingredient, Recipe, Tag
+from recipes.models import FavoriteRecipe, Ingredient, Recipe, Tag
 from users.models import Follow, User
 
 
@@ -115,3 +115,39 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    @action(
+        ('POST', 'DELETE'), detail=True, permission_classes=(IsAuthenticated,)
+    )
+    def favorite(self, request, pk=None):
+        recipe = get_object_or_404(Recipe, id=pk)
+        favorite_recipe = FavoriteRecipe.objects.filter(
+            user=request.user, recipe=recipe
+        ).first()
+
+        if request.method == 'POST':
+            if favorite_recipe:
+                return Response(
+                    {'message': 'Recipe is already in favorites'},
+                    status.HTTP_400_BAD_REQUEST
+                )
+            favorite_recipe = FavoriteRecipe(user=request.user, recipe=recipe)
+            favorite_recipe.save()
+
+            return Response(
+                {'message': 'Recipe has been successfully added to favorites'},
+                status.HTTP_201_CREATED
+            )
+        if request.method == 'DELETE':
+            if favorite_recipe:
+                favorite_recipe.delete()
+            return Response(
+                {'message': ('Recipe has been successfully '
+                             'removed from favorites')},
+                status.HTTP_204_NO_CONTENT
+            )
+        else:
+            return Response(
+                {'message': 'Recipe is not found in favorites'},
+                status.HTTP_404_NOT_FOUND
+            )

@@ -138,3 +138,27 @@ class IngredientsInRecipe(models.Model):
                 name='unique_ingredient_recipe'
             ),
         )
+
+
+class FavoriteRecipe(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='favorited'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='favorite_recipe'
+    )
+
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_favorited',
+            ),
+        )
+
+    def __str__(self):
+        return f'{self.user} added to favorites {self.recipe}'
