@@ -11,6 +11,7 @@ from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (
     FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
     RecipeSerializer, TagSerializer, UserCreateSerializer, UserSerializer,
+    FavoritedSerializer
 )
 from recipes.models import FavoriteRecipe, Ingredient, Recipe, Tag
 from users.models import Follow, User
@@ -36,8 +37,8 @@ class UserViewSet(DjoserViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(('POST', 'DELETE'), detail=True,)
-    def subscribe(self, request, id):
-        author = get_object_or_404(User, id=id)
+    def subscribe(self, request, pk=None):
+        author = get_object_or_404(User, id=pk)
         if request.method == 'POST':
             if request.user.id == author.id:
                 raise ValidationError(
@@ -132,11 +133,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     status.HTTP_400_BAD_REQUEST
                 )
             favorite_recipe = FavoriteRecipe(user=request.user, recipe=recipe)
+            serializer = FavoritedSerializer(favorite_recipe)
             favorite_recipe.save()
 
             return Response(
-                {'message': 'Recipe has been successfully added to favorites'},
-                status.HTTP_201_CREATED
+                serializer.data,
+                status.HTTP_201_CREATED,
             )
         if request.method == 'DELETE':
             if favorite_recipe:
