@@ -76,7 +76,7 @@ class Recipe(models.Model):
     )
     ingredients = models.ManyToManyField(
         Ingredient,
-        related_name='recipe',
+        related_name='recipes',
         through='IngredientsInRecipe'
     )
     text = models.TextField()
@@ -120,7 +120,7 @@ class IngredientsInRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='ingredient_recipe'
+        related_name='ingredient'
     )
     recipe = models.ForeignKey(
         Recipe,
@@ -168,7 +168,7 @@ class ShoppingList(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='shopping_list'
+        related_name='user_shopping_list'
     )
     recipe = models.ForeignKey(
         Recipe,
@@ -176,13 +176,13 @@ class ShoppingList(models.Model):
         related_name='in_shopping_list'
     )
 
-    class Meta:
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='unique_shopping_list',
-            ),
-        )
+    # class Meta:
+    #     constraints = (
+    #         models.UniqueConstraint(
+    #             fields=('user', 'recipe'),
+    #             name='unique_shopping_list',
+    #         ),
+    #     )
 
     def __str__(self):
-        return f'{self.user} added to {self.recipe} shopping list'
+        return f'{self.user} added {self.recipe} to shopping list'

@@ -165,11 +165,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).first()
 
         if request.method == 'POST':
-            if shopping_list:
-                return Response(
-                    {'message': 'Recipe is already in shopping list'},
-                    status.HTTP_400_BAD_REQUEST
-                )
+            # if shopping_list:
+            #     return Response(
+            #         {'message': 'Recipe is already in shopping list'},
+            #         status.HTTP_400_BAD_REQUEST
+            #     )
             shopping_list = ShoppingList(user=request.user, recipe=recipe)
             serializer = RecipeInfoSerializer(shopping_list)
             shopping_list.save()
@@ -188,21 +188,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
 
     @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
-    def download_shopping_cart(self, request, pk=None):
-        shopping_list = ShoppingList.objects.filter(user=request.user)
-
+    def download_shopping_cart(self, request):
+        ingredients = IngredientsInRecipe.objects.all()
+        ingredients = ingredients.values(
+            'ingredient__name',
+            'ingredient__measurement_unit'
+        )
+        shopping_list = ingredients.filter(
+            recipe__in_shopping_list__user=request.user
+        ).annotate(ingredient_total=Sum('amount'))
         response = HttpResponse(content_type='text/plain')
         response['Content-Disposition'] = (
-            'attachment; filename="shopping_cart.txt"'
+            'attachment; filename="shopping_list.txt"'
         )
-
-        for item in shopping_list:
-            response.write(f'{item.recipe.name}\n')
-            ingredients = ', '.join(
-                [f'{ingredient.ingredient.name} - '
-                 f'{ingredient.amount}'
-                 for ingredient in item.recipe.recipe.all()]
+        response.write('Your shopping list\n\n')
+        for ingredient in shopping_list:
+            ingredients = ''.join(
+                f'{ingredient.get("ingredient__name")} - '
+                f'{ingredient.get("ingredient_total")}'
+                f'{ingredient.get("ingredient__measurement_unit")}\n'
             )
-            response.write(f'{ingredients}\n')  # Ингредиенты рецепта
+            response.write(f'{ingredients}')
 
         return response
