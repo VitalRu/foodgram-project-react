@@ -9,11 +9,13 @@ from rest_framework.response import Response
 
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (
-    FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
-    RecipeSerializer, TagSerializer, UserCreateSerializer, UserSerializer,
-    FavoritedSerializer
+    RecipeInfoSerializer, FollowSerializer, IngredientSerializer,
+    RecipeCreateSerializer, RecipeSerializer, TagSerializer,
+    UserCreateSerializer, UserSerializer,
 )
-from recipes.models import FavoriteRecipe, Ingredient, Recipe, Tag
+from recipes.models import (
+    FavoriteRecipe, Ingredient, Recipe, ShoppingList, Tag,
+)
 from users.models import Follow, User
 
 
@@ -38,7 +40,7 @@ class UserViewSet(DjoserViewSet):
             self.request.user.set_password(serializer.data['new_password'])
             self.request.user.save()
             return Response(
-                'Password changed successfully',
+                {'message': 'Password changed successfully'},
                 status=status.HTTP_204_NO_CONTENT
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -135,7 +137,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     status.HTTP_400_BAD_REQUEST
                 )
             favorite_recipe = FavoriteRecipe(user=request.user, recipe=recipe)
-            serializer = FavoritedSerializer(favorite_recipe)
+            serializer = RecipeInfoSerializer(favorite_recipe)
             favorite_recipe.save()
 
             return Response(
@@ -145,6 +147,43 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == 'DELETE':
             if favorite_recipe:
                 favorite_recipe.delete()
+            return Response(
+                {'message': ('Recipe has been successfully '
+                             'removed from favorites')},
+                status.HTTP_204_NO_CONTENT
+            )
+        else:
+            return Response(
+                {'message': 'Recipe is not found in favorites'},
+                status.HTTP_404_NOT_FOUND
+            )
+
+    @action(
+        ('POST', 'DELETE'), detail=True, permission_classes=(IsAuthenticated,)
+    )
+    def shopping_cart(self, request, pk=None):
+        recipe = get_object_or_404(Recipe, id=pk)
+        shopping_list = ShoppingList.objects.filter(
+            user=request.user, recipe=recipe
+        ).first()
+
+        if request.method == 'POST':
+            if shopping_list:
+                return Response(
+                    {'message': 'Recipe is already in favorites'},
+                    status.HTTP_400_BAD_REQUEST
+                )
+            shopping_list = FavoriteRecipe(user=request.user, recipe=recipe)
+            serializer = RecipeInfoSerializer(shopping_list)
+            shopping_list.save()
+
+            return Response(
+                serializer.data,
+                status.HTTP_201_CREATED,
+            )
+        if request.method == 'DELETE':
+            if shopping_list:
+                shopping_list.delete()
             return Response(
                 {'message': ('Recipe has been successfully '
                              'removed from favorites')},

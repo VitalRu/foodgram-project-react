@@ -5,7 +5,9 @@ from django.db.transaction import atomic
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import Ingredient, IngredientsInRecipe, Recipe, Tag
+from recipes.models import (
+    Ingredient, IngredientsInRecipe, Recipe, Tag,
+)
 from users.models import Follow, User
 
 
@@ -209,7 +211,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
 
-class FavoritedSerializer(serializers.ModelSerializer):
+class RecipeInfoSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='recipe.id')
     name = serializers.ReadOnlyField(source='recipe.name')
     image = Base64ImageField(source='recipe.image')

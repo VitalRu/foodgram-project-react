@@ -161,4 +161,28 @@ class FavoriteRecipe(models.Model):
         )
 
     def __str__(self):
-        return f'{self.user} added to favorites {self.recipe}'
+        return f'{self.user} added {self.recipe} to favorites'
+
+
+class ShoppingList(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='shopping_list'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='in_shopping_list'
+    )
+
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_shopping_list',
+            ),
+        )
+
+    def __str__(self):
+        return f'{self.user} added to {self.recipe} shopping list'
