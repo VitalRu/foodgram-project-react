@@ -50,12 +50,14 @@ class FollowSerializer(serializers.ModelSerializer):
     first_name = serializers.ReadOnlyField(source='author.first_name')
     last_name = serializers.ReadOnlyField(source='author.last_name')
     is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             'email', 'id', 'username', 'first_name', 'last_name',
-            'is_subscribed'
+            'is_subscribed', 'recipes', 'recipes_count'
         )
 
         validators = (
@@ -69,6 +71,14 @@ class FollowSerializer(serializers.ModelSerializer):
         return Follow.objects.filter(
             user=obj.user, author=obj.author
         ).exists()
+
+    def get_recipes(self, obj):
+        recipes = Recipe.objects.filter(author=obj.author)
+        serializer = RecipeSerializer(recipes, many=True)
+        return serializer.data
+
+    def get_recipes_count(self, obj):
+        return Recipe.objects.filter(author=obj.author).count()
 
 
 class IngredientSerializer(serializers.ModelSerializer):

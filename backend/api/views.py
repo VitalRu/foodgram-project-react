@@ -1,3 +1,4 @@
+from rest_framework.pagination import PageNumberPagination
 from django.db.models import Sum
 from django.http import HttpResponse
 from djoser.serializers import SetPasswordSerializer
@@ -25,6 +26,7 @@ from users.models import Follow, User
 class UserViewSet(DjoserViewSet):
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         return User.objects.all()
@@ -66,11 +68,17 @@ class UserViewSet(DjoserViewSet):
     @action(('POST', 'DELETE'), detail=True,)
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, id=id)
+        follow = Follow.objects.filter(user=request.user, author=author,)
         if request.method == 'POST':
             if request.user.id == author.id:
                 return Response(
                     {'message': 'Unable to subscribe to yourself'},
                     status=status.HTTP_400_BAD_REQUEST
+                )
+            if follow.exists():
+                return Response(
+                    {'message': 'Already subscribed'},
+                    status=status.HTTP_204_NO_CONTENT
                 )
             serializer = FollowSerializer(
                 Follow.objects.create(user=request.user, author=author),
@@ -81,10 +89,6 @@ class UserViewSet(DjoserViewSet):
                 status=status.HTTP_201_CREATED,
             )
         elif request.method == 'DELETE':
-            follow = Follow.objects.filter(
-                user=request.user,
-                author=author,
-            )
             if follow.exists():
                 follow.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
