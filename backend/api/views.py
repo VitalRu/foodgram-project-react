@@ -125,6 +125,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
+    def destroy(self, request, pk=None):
+        instance = get_object_or_404(Recipe, id=pk)
+        if not instance.author == request.user:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
             return RecipeSerializer
@@ -189,8 +196,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status.HTTP_201_CREATED,
             )
         if request.method == 'DELETE':
-            if shopping_list:
-                shopping_list.delete()
+            if not shopping_list:
+                return Response(
+                    {'message': 'No such recipe in your shopping list'},
+                    status.HTTP_400_BAD_REQUEST)
+            shopping_list.delete()
             return Response(
                 {'message': ('Recipe has been successfully '
                              'removed from shopping list')},
