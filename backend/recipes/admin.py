@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import FavoriteRecipe, Ingredient, Recipe, ShoppingList, Tag
+from .models import FavoriteRecipe, Ingredient, Recipe, ShoppingList, Tag, IngredientsInRecipe, TagsInRecipe
 
 
 @admin.register(Recipe)
@@ -13,7 +13,6 @@ class RecipeAdmin(admin.ModelAdmin):
 
     search_fields = ('name', r'^author__username', r'^tags__name',
                      r'^tags__slug')
-    empty_value_display = '-пусто-'
 
     def display_tags(self, obj):
         return ', '.join([tag.name for tag in obj.tags.all()])
@@ -35,13 +34,26 @@ class RecipeAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'measurement_unit')
     search_fields = ('id', r'^name')
-    empty_value_display = '-пусто-'
 
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name', 'color', 'slug')
     list_filter = ('name',)
+
+
+@admin.register(IngredientsInRecipe)
+class IngredientsInRecipeAdmin(admin.ModelAdmin):
+    list_display = ('ingredient', 'recipe', 'amount',)
+    search_fields = (r'^ingredient__name', r'^recipe__name',)
+    list_filter = ('recipe__name',)
+
+
+@admin.register(TagsInRecipe)
+class TagsInRecipeAdmin(admin.ModelAdmin):
+    list_display = ('tag', 'recipe')
+    search_fields = (r'^tag__name', r'^recipe__name',)
+    list_filter = ('recipe__name',)
 
 
 @admin.register(FavoriteRecipe)

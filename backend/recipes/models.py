@@ -18,6 +18,9 @@ class Ingredient(models.Model):
 
     class Meta:
         ordering = ['id']
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
+
         constraints = (
             models.UniqueConstraint(
                 fields=('name', 'measurement_unit'),
@@ -52,6 +55,8 @@ class Tag(models.Model):
 
     class Meta:
         ordering = ['id']
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
 
 
 class Recipe(models.Model):
@@ -108,6 +113,8 @@ class TagsInRecipe(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Теги в рецептах'
+        verbose_name_plural = 'Теги в рецептах'
         constraints = (
             models.UniqueConstraint(
                 fields=('tag', 'recipe'),
@@ -132,6 +139,8 @@ class IngredientsInRecipe(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Ингредиенты в рецептах'
+        verbose_name_plural = 'Ингдредиенты в рецептах'
         constraints = (
             models.UniqueConstraint(
                 fields=('ingredient', 'recipe'),
@@ -153,6 +162,8 @@ class FavoriteRecipe(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Рецепты, избранное'
+        verbose_name_plural = 'Рецепты, избранное'
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
@@ -177,6 +188,8 @@ class ShoppingList(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Список покупок'
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),

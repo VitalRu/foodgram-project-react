@@ -119,6 +119,12 @@ AUTH_PASSWORD_VALIDATORS = [
 DJOSER = {
     'AUTH_TOKEN_MODEL': 'authtoken.Token',
     'LOGIN_FIELD': 'email',
+    'PERMISSIONS': {
+        'user': ('rest_framework.permissions.IsAuthenticatedOrReadOnly',),
+        'user_list': ('rest_framework.permissions.IsAuthenticated',),
+        'token_create': ('rest_framework.permissions.AllowAny',),
+        'token_destroy': ('rest_framework.permissions.IsAuthenticated',),
+    },
     'SERIALIZERS': {
         'user_create': 'api.serializers.UserCreateSerializer',
         'user': 'api.serializers.UserSerializer',
