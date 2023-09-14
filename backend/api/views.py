@@ -1,22 +1,23 @@
-from django.core.exceptions import ValidationError
+from django.db.models import Sum
+from django.http import HttpResponse
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet as DjoserViewSet
-from django.http import HttpResponse
-from django.db.models import Sum
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import SAFE_METHODS, IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.permissions import (
+    SAFE_METHODS, IsAuthenticated, IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (
-    RecipeInfoSerializer, FollowSerializer, IngredientSerializer,
-    RecipeCreateSerializer, RecipeSerializer, TagSerializer,
+    FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
+    RecipeInfoSerializer, RecipeSerializer, TagSerializer,
     UserCreateSerializer, UserSerializer,
 )
 from recipes.models import (
-    FavoriteRecipe, Ingredient, Recipe, ShoppingList, Tag, IngredientsInRecipe
+    FavoriteRecipe, Ingredient, IngredientsInRecipe, Recipe, ShoppingList, Tag,
 )
 from users.models import Follow, User
 
@@ -53,7 +54,7 @@ class UserViewSet(DjoserViewSet):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(('GET',), detail=False)
+    @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
         queryset = Follow.objects.filter(user=self.request.user)
         page = self.paginate_queryset(queryset)
@@ -67,14 +68,14 @@ class UserViewSet(DjoserViewSet):
         author = get_object_or_404(User, id=id)
         if request.method == 'POST':
             if request.user.id == author.id:
-                raise ValidationError(
-                    'Unable to subscribe to yourself'
+                return Response(
+                    {'message': 'Unable to subscribe to yourself'},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
-            else:
-                serializer = FollowSerializer(
-                    Follow.objects.create(user=request.user, author=author),
-                    context={'request': request},
-                )
+            serializer = FollowSerializer(
+                Follow.objects.create(user=request.user, author=author),
+                context={'request': request},
+            )
             return Response(
                 serializer.data,
                 status=status.HTTP_201_CREATED,
@@ -87,11 +88,10 @@ class UserViewSet(DjoserViewSet):
             if follow.exists():
                 follow.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                return Response(
-                    {'errors': 'Unrecognized author'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            return Response(
+                {'errors': 'No such author in your subscriptions'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             {'errors': 'Invalid operation'},
             status=status.HTTP_400_BAD_REQUEST,
@@ -114,12 +114,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = (IsOwnerOrReadOnly,)
-
-    def get_queryset(self):
-        queryset = Recipe.objects.select_related('author').prefetch_related(
-            'tags', 'ingredients', 'recipe'
-        )
-        return queryset
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
@@ -207,7 +201,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = (
             'attachment; filename="shopping_list.txt"'
         )
-        response.write('Your shopping list\n\n')
+        response.write(f"{request.user.username}'s shopping list\n\n")
         for ingredient in shopping_list:
             ingredients = ''.join(
                 f'{ingredient.get("ingredient__name")} - '
