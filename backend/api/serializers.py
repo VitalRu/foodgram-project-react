@@ -73,8 +73,8 @@ class FollowSerializer(serializers.ModelSerializer):
         ).exists()
 
     def get_recipes(self, obj):
-        recipes = Recipe.objects.filter(author=obj.author)
-        serializer = RecipeSerializer(recipes, many=True)
+        queryset = queryset = obj.author.recipe.all()
+        serializer = FollowRecipeInfoSerializer(queryset, many=True)
         return serializer.data
 
     def get_recipes_count(self, obj):
@@ -211,12 +211,14 @@ class RecipeSerializer(serializers.ModelSerializer):
         many=True, required=True, source='recipe'
     )
     image = Base64ImageField()
+    is_favorited = serializers.BooleanField(read_only=True)
+    is_in_shopping_cart = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Recipe
         fields = (
-            'id', 'tags', 'author', 'ingredients', 'name', 'image', 'text',
-            'cooking_time'
+            'id', 'tags', 'author', 'ingredients', 'is_favorited',
+            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
         )
 
 
@@ -225,6 +227,23 @@ class RecipeInfoSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField(source='recipe.name')
     image = Base64ImageField(source='recipe.image')
     cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class FollowRecipeInfoSerializer(serializers.ModelSerializer):
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['id'] = instance.id
+        data['name'] = instance.name
+        data['cooking_time'] = instance.cooking_time
+        return data
+
+    def get_image(self, obj):
+        return obj.image.url
 
     class Meta:
         model = Recipe
