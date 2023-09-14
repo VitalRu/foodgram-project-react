@@ -176,13 +176,13 @@ class ShoppingList(models.Model):
         related_name='in_shopping_list'
     )
 
-    # class Meta:
-    #     constraints = (
-    #         models.UniqueConstraint(
-    #             fields=('user', 'recipe'),
-    #             name='unique_shopping_list',
-    #         ),
-    #     )
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_shopping_list',
+            ),
+        )
 
     def __str__(self):
         return f'{self.user} added {self.recipe} to shopping list'

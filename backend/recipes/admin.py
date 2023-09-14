@@ -1,12 +1,13 @@
 from django.contrib import admin
 
-from .models import Recipe, Ingredient, Tag
+from .models import FavoriteRecipe, Ingredient, Recipe, ShoppingList, Tag
 
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('id', 'author', 'name', 'display_tags',
-                    'display_ingredients', 'text', 'cooking_time', 'pub_date')
+                    'display_ingredients', 'text', 'cooking_time', 'pub_date',
+                    'favorite_count')
 
     list_filter = ('name', 'author', 'tags')
 
@@ -22,8 +23,12 @@ class RecipeAdmin(admin.ModelAdmin):
             [ingredient.name for ingredient in obj.ingredients.all()]
         )
 
+    def favorite_count(self, obj):
+        return obj.favorite_recipe.count()
+
     display_tags.short_description = 'tags'
     display_ingredients.short_description = 'ingredients'
+    favorite_count.short_description = 'favorite'
 
 
 @admin.register(Ingredient)
@@ -37,3 +42,13 @@ class IngredientAdmin(admin.ModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name', 'color', 'slug')
     list_filter = ('name',)
+
+
+@admin.register(FavoriteRecipe)
+class FavoriteRecipe(admin.ModelAdmin):
+    list_display = ('user', 'recipe')
+
+
+@admin.register(ShoppingList)
+class ShoppingList(admin.ModelAdmin):
+    list_display = ('user', 'recipe')

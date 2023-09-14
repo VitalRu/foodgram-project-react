@@ -1,4 +1,3 @@
-from rest_framework.pagination import PageNumberPagination
 from django.db.models import Sum
 from django.http import HttpResponse
 from djoser.serializers import SetPasswordSerializer
@@ -6,11 +5,13 @@ from djoser.views import UserViewSet as DjoserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
     SAFE_METHODS, IsAuthenticated, IsAuthenticatedOrReadOnly,
 )
 from rest_framework.response import Response
 
+from .filters import RecipeFilter
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (
     FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
@@ -21,6 +22,7 @@ from recipes.models import (
     FavoriteRecipe, Ingredient, IngredientsInRecipe, Recipe, ShoppingList, Tag,
 )
 from users.models import Follow, User
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class UserViewSet(DjoserViewSet):
@@ -118,6 +120,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = (IsOwnerOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
@@ -169,11 +173,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).first()
 
         if request.method == 'POST':
-            # if shopping_list:
-            #     return Response(
-            #         {'message': 'Recipe is already in shopping list'},
-            #         status.HTTP_400_BAD_REQUEST
-            #     )
+            if shopping_list:
+                return Response(
+                    {'message': 'Recipe is already in your shopping list'},
+                    status.HTTP_400_BAD_REQUEST
+                )
             shopping_list = ShoppingList(user=request.user, recipe=recipe)
             serializer = RecipeInfoSerializer(shopping_list)
             shopping_list.save()
