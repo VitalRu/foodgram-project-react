@@ -6,7 +6,7 @@ from django.db.models import Sum
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
 
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
@@ -23,7 +23,7 @@ from users.models import Follow, User
 
 class UserViewSet(DjoserViewSet):
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def get_queryset(self):
         return User.objects.all()
@@ -33,7 +33,13 @@ class UserViewSet(DjoserViewSet):
             return UserCreateSerializer
         return UserSerializer
 
-    @action(('POST',), detail=False, permission_classes=(IsAuthenticated,))
+    @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
+    def me(self, request, *args, **kwargs):
+        self.get_object = self.get_instance
+        if request.method == 'GET':
+            return self.retrieve(request, *args, **kwargs)
+
+    @action(('POST',), detail=False)
     def set_password(self, request, *args, **kwargs):
         serializer = SetPasswordSerializer(
             data=request.data, context={'request': request}
@@ -47,7 +53,7 @@ class UserViewSet(DjoserViewSet):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
+    @action(('GET',), detail=False)
     def subscriptions(self, request):
         queryset = Follow.objects.filter(user=self.request.user)
         page = self.paginate_queryset(queryset)
