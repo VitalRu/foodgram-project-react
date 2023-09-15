@@ -1,5 +1,5 @@
 import csv
-
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from recipes.models import Tag
@@ -12,7 +12,7 @@ class Command(BaseCommand):
     help = 'import data from ingredients.csv'
 
     def handle(self, *args, **kwargs):
-        with open(f'{PATH}/tags.csv', encoding='utf-8') as file:
+        with open(f'{settings.BASE_DIR}/data/tags.csv', 'r',) as file:
             reader = csv.reader(file)
 
             for row in reader:
