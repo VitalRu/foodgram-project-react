@@ -1,17 +1,16 @@
 from django.db.models import Sum
 from django.http import HttpResponse
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet as DjoserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import (
-    SAFE_METHODS, IsAuthenticated,
-)
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 
-from .filters import RecipeFilter, IngredientFilter
+from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (
     FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
@@ -22,7 +21,6 @@ from recipes.models import (
     FavoriteRecipe, Ingredient, IngredientsInRecipe, Recipe, ShoppingList, Tag,
 )
 from users.models import Follow, User
-from django_filters.rest_framework import DjangoFilterBackend
 
 
 class UserViewSet(DjoserViewSet):
