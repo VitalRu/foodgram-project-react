@@ -42,7 +42,7 @@ class UserViewSet(DjoserViewSet):
         if request.method == 'GET':
             return self.retrieve(request, *args, **kwargs)
 
-    @action(('POST',), detail=False)
+    @action(('POST',), detail=False, permission_classes=(IsAuthenticated,))
     def set_password(self, request, *args, **kwargs):
         serializer = SetPasswordSerializer(
             data=request.data, context={'request': request}
