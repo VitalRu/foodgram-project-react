@@ -25,7 +25,7 @@ from users.models import Follow, User
 
 class UserViewSet(DjoserViewSet):
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAdminOrReadOnly,)
     pagination_class = PageNumberPagination
 
     def get_queryset(self):
@@ -65,7 +65,9 @@ class UserViewSet(DjoserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(('POST', 'DELETE'), detail=True,)
+    @action(
+        ('POST', 'DELETE'), detail=True, permission_classes=(IsAuthenticated,)
+    )
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, id=id)
         follow = Follow.objects.filter(user=request.user, author=author,)
@@ -78,7 +80,7 @@ class UserViewSet(DjoserViewSet):
             if follow.exists():
                 return Response(
                     {'message': 'Already subscribed'},
-                    status=status.HTTP_204_NO_CONTENT
+                    status=status.HTTP_400_BAD_REQUEST
                 )
             serializer = FollowSerializer(
                 Follow.objects.create(user=request.user, author=author),
