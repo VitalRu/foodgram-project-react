@@ -16,6 +16,10 @@ DEBUG = os.getenv('DEBUG', default=True)
 
 ALLOWED_HOSTS = []
 
+CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
+
+ROOT_URLCONF = 'foodgram.urls'
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -65,6 +69,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'foodgram.wsgi.application'
 
 AUTH_USER_MODEL = 'users.User'
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
