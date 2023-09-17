@@ -15,7 +15,7 @@ from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (
     FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
     RecipeInfoSerializer, RecipeSerializer, TagSerializer,
-    UserCreateSerializer, UserSerializer,
+    UserCreateSerializer, UserSerializer
 )
 from recipes.models import (
     FavoriteRecipe, Ingredient, IngredientsInRecipe, Recipe, ShoppingList, Tag,
@@ -147,67 +147,55 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def favorite(self, request, pk=None):
         recipe = get_object_or_404(Recipe, id=pk)
-        favorite_recipe = FavoriteRecipe.objects.filter(
-            user=request.user, recipe=recipe
-        ).first()
 
         if request.method == 'POST':
-            if favorite_recipe:
-                return Response(
-                    {'message': 'Recipe is already in favorites'},
-                    status.HTTP_400_BAD_REQUEST
-                )
-            favorite_recipe = FavoriteRecipe(user=request.user, recipe=recipe)
-            serializer = RecipeInfoSerializer(favorite_recipe)
-            favorite_recipe.save()
-
+            FavoriteRecipe.objects.create(
+                user=request.user, recipe=recipe
+            )
+            serializer = RecipeInfoSerializer(recipe)
             return Response(
                 serializer.data,
                 status.HTTP_201_CREATED,
             )
         if request.method == 'DELETE':
-            if favorite_recipe:
-                favorite_recipe.delete()
-            return Response(
-                {'message': ('Recipe has been successfully '
-                             'removed from favorites')},
-                status.HTTP_204_NO_CONTENT
+            favorite_recipe = FavoriteRecipe.objects.filter(
+                user=self.request.user,
+                recipe=recipe
             )
+            if favorite_recipe.exists():
+                favorite_recipe.delete()
+                return Response(
+                    {'errors': 'Recipe has been removed from your favorites'},
+                    status=status.HTTP_204_NO_CONTENT
+                )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         ('POST', 'DELETE'), detail=True, permission_classes=(IsAuthenticated,)
     )
     def shopping_cart(self, request, pk=None):
         recipe = get_object_or_404(Recipe, id=pk)
-        shopping_list = ShoppingList.objects.filter(
-            user=request.user, recipe=recipe
-        ).first()
 
         if request.method == 'POST':
-            if shopping_list:
-                return Response(
-                    {'message': 'Recipe is already in your shopping list'},
-                    status.HTTP_400_BAD_REQUEST
-                )
-            shopping_list = ShoppingList(user=request.user, recipe=recipe)
-            serializer = RecipeInfoSerializer(shopping_list)
-            shopping_list.save()
-
+            ShoppingList.objects.create(user=request.user, recipe=recipe)
+            serializer = RecipeInfoSerializer(recipe)
             return Response(
                 serializer.data,
                 status.HTTP_201_CREATED,
             )
         if request.method == 'DELETE':
-            if not shopping_list:
-                return Response(
-                    {'message': 'No such recipe in your shopping list'},
-                    status.HTTP_400_BAD_REQUEST)
-            shopping_list.delete()
-            return Response(
-                {'message': ('Recipe has been successfully '
-                             'removed from shopping list')},
-                status.HTTP_204_NO_CONTENT
+            shopping_list_item = ShoppingList.objects.filter(
+                user=self.request.user,
+                recipe=recipe
             )
+            if shopping_list_item.exists():
+                shopping_list_item.delete()
+                return Response(
+                    {'errors': ('Recipe has been removed '
+                                'from your shopping list')},
+                    status=status.HTTP_204_NO_CONTENT
+                )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
     def download_shopping_cart(self, request):

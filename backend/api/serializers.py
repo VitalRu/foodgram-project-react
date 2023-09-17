@@ -74,7 +74,7 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes(self, obj):
         queryset = queryset = obj.author.recipe.all()
-        serializer = FollowRecipeInfoSerializer(queryset, many=True)
+        serializer = RecipeInfoSerializer(queryset, many=True)
         return serializer.data
 
     def get_recipes_count(self, obj):
@@ -237,28 +237,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeInfoSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField(source='recipe.id')
-    name = serializers.ReadOnlyField(source='recipe.name')
-    image = Base64ImageField(source='recipe.image')
-    cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
-
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-
-class FollowRecipeInfoSerializer(serializers.ModelSerializer):
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['id'] = instance.id
-        data['name'] = instance.name
-        data['cooking_time'] = instance.cooking_time
-        return data
-
-    def get_image(self, obj):
-        return obj.image.url
-
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
