@@ -1,4 +1,5 @@
 from django.db.models import Sum
+from django.db.models.expressions import Exists, OuterRef
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.serializers import SetPasswordSerializer
@@ -7,7 +8,9 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
+from rest_framework.permissions import (
+    SAFE_METHODS, IsAuthenticated, IsAuthenticatedOrReadOnly
+)
 from rest_framework.response import Response
 
 from .filters import IngredientFilter, RecipeFilter
@@ -15,7 +18,7 @@ from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (
     FollowSerializer, IngredientSerializer, RecipeCreateSerializer,
     RecipeInfoSerializer, RecipeSerializer, TagSerializer,
-    UserCreateSerializer, UserSerializer
+    UserCreateSerializer, UserSerializer,
 )
 from recipes.models import (
     FavoriteRecipe, Ingredient, IngredientsInRecipe, Recipe, ShoppingList, Tag,
@@ -24,8 +27,7 @@ from users.models import Follow, User
 
 
 class UserViewSet(DjoserViewSet):
-    serializer_class = UserSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = PageNumberPagination
 
     def get_queryset(self):
@@ -122,9 +124,8 @@ class TagViewSet(viewsets.ModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
-    permission_classes = (IsOwnerOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
+    permission_classes = (IsOwnerOrReadOnly,)
     filterset_class = RecipeFilter
 
     def destroy(self, request, pk=None):
@@ -133,6 +134,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_queryset(self):
+        queryset = Recipe.objects.select_related('author').prefetch_related(
+            'tags', 'ingredients', 'recipe', 'in_shopping_list',
+            'favorite_recipe',
+        )
+        if self.request.user.is_authenticated:
+            queryset = queryset.annotate(
+                is_favorited=Exists(
+                    FavoriteRecipe.objects.filter(
+                        user=self.request.user, recipe=OuterRef('id')
+                    )
+                ),
+                is_in_shopping_cart=Exists(
+                    ShoppingList.objects.filter(
+                        user=self.request.user, recipe=OuterRef('id')
+                    )
+                ),
+            )
+        return queryset
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
