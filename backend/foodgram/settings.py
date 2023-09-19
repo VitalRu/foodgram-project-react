@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', default='secret_key')
 
 
-DEBUG = os.getenv('DEBUG', default='False')
+DEBUG = os.getenv('DEBUG', default='True')
 
 ALLOWED_HOSTS = []
 
@@ -76,7 +76,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-if DEBUG:
+if DEBUG is True:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -122,22 +122,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-# DJOSER = {
-#     'AUTH_TOKEN_MODEL': 'authtoken.Token',
-#     'LOGIN_FIELD': 'email',
-#     'PERMISSIONS': {
-#         'user': ('rest_framework.permissions.IsAuthenticatedOrReadOnly',),
-#         'user_list': ('rest_framework.permissions.IsAuthenticated',),
-#         'token_create': ('rest_framework.permissions.AllowAny',),
-#         'token_destroy': ('rest_framework.permissions.IsAuthenticated',),
-#     },
-#     'SERIALIZERS': {
-#         'user_create': 'api.serializers.UserCreateSerializer',
-#         'user': 'api.serializers.UserSerializer',
-#         'current_user': 'api.serializers.UserSerializer',
-#     },
-# }
 
 
 LANGUAGE_CODE = 'ru'
