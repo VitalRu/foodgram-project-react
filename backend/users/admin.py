@@ -12,7 +12,7 @@ class UserAdmin(admin.ModelAdmin):
 
 
 @admin.register(Follow)
-class UserAdmin(admin.ModelAdmin):
+class FollowAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'author')
     search_fields = ('id', r'^user', r'^author')
     empty_value_display = '-пусто-'
