@@ -8,8 +8,8 @@ from rest_framework.validators import UniqueTogetherValidator
 from recipes.models import Ingredient, IngredientsInRecipe, Recipe, Tag
 from users.models import Follow, User
 
-MIN_AMOUNT = 1
-MAX_AMOUNT = 32_000
+MIN_VALUE = 1
+MAX_VALUE = 32_000
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -118,7 +118,7 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 class AddIngredientSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     amount = serializers.IntegerField(
-        min_value=MIN_AMOUNT, max_value=MAX_AMOUNT
+        min_value=MIN_VALUE, max_value=MAX_VALUE
     )
 
     class Meta:
@@ -142,6 +142,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(), many=True
     )
     image = Base64ImageField()
+    cooking_time = serializers.IntegerField(
+        min_value=MIN_VALUE, max_value=MAX_VALUE
+    )
 
     class Meta:
         model = Recipe
@@ -152,34 +155,28 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ('author',)
 
     def validate(self, data):
-        cooking_time = int(self.initial_data['cooking_time'])
-        if cooking_time < 1:
-            raise serializers.ValidationError({
-                'Minimum cooking_time value must be equal 1.'
-            })
         ingredients = data['ingredients']
         unique_ingredients = set()
         for ingredient in ingredients:
             current_ingredient = ingredient['id']
-            amount = ingredient['amount']
             if current_ingredient in unique_ingredients:
                 raise serializers.ValidationError(
                     'No duplicate ingredients'
                 )
-            if amount < 1:
-                raise serializers.ValidationError({
-                    'Minimum number of ingredients must be equal 1'
-                })
             unique_ingredients.add(current_ingredient)
         return data
 
     def add_ingredients(self, ingredients, recipe):
+        ingredients_in_recipe = []
         for ingredient in ingredients:
-            IngredientsInRecipe.objects.create(
-                recipe=recipe,
-                ingredient=ingredient.get('id'),
-                amount=ingredient.get('amount'),
+            ingredients_in_recipe.append(
+                IngredientsInRecipe(
+                    recipe=recipe,
+                    ingredient=ingredient.get('id'),
+                    amount=ingredient.get('amount'),
+                )
             )
+        IngredientsInRecipe.objects.bulk_create(ingredients_in_recipe)
 
     @atomic
     def create(self, validated_data):
