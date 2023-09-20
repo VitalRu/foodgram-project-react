@@ -8,6 +8,9 @@ from rest_framework.validators import UniqueTogetherValidator
 from recipes.models import Ingredient, IngredientsInRecipe, Recipe, Tag
 from users.models import Follow, User
 
+MIN_AMOUNT = 1
+MAX_AMOUNT = 32_000
+
 
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
-        return Follow.objects.filter(user=request.user, author=obj).exists()
+        return obj.follower.exists()
 
     class Meta:
         model = User
@@ -68,17 +71,18 @@ class FollowSerializer(serializers.ModelSerializer):
         )
 
     def get_is_subscribed(self, obj):
-        return Follow.objects.filter(
-            user=obj.user, author=obj.author
-        ).exists()
+        request = self.context.get('request')
+        if request is None or request.user.is_anonymous:
+            return False
+        return obj.user.follower.exists()
 
     def get_recipes(self, obj):
-        queryset = queryset = obj.author.recipe.all()
+        queryset = obj.author.recipe.all()
         serializer = RecipeInfoSerializer(queryset, many=True)
         return serializer.data
 
     def get_recipes_count(self, obj):
-        return Recipe.objects.filter(author=obj.author).count()
+        return obj.author.recipe.count()
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -113,7 +117,9 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 
 class AddIngredientSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    amount = serializers.IntegerField()
+    amount = serializers.IntegerField(
+        min_value=MIN_AMOUNT, max_value=MAX_AMOUNT
+    )
 
     class Meta:
         model = IngredientsInRecipe
