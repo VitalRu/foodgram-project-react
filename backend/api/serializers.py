@@ -4,7 +4,6 @@ from django.core.files.base import ContentFile
 from django.db.transaction import atomic
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-
 from recipes.models import Ingredient, IngredientsInRecipe, Recipe, Tag
 from users.models import Follow, User
 
@@ -57,7 +56,7 @@ class FollowSerializer(serializers.ModelSerializer):
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = User
+        model = Follow
         fields = (
             'email', 'id', 'username', 'first_name', 'last_name',
             'is_subscribed', 'recipes', 'recipes_count'

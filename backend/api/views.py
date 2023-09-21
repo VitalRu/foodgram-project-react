@@ -27,6 +27,7 @@ from users.models import Follow, User
 
 
 class UserViewSet(DjoserViewSet):
+    queryset = User.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = PageNumberPagination
 
@@ -49,18 +50,17 @@ class UserViewSet(DjoserViewSet):
         serializer = SetPasswordSerializer(
             data=request.data, context={'request': request}
         )
-        if serializer.is_valid(raise_exception=True):
-            self.request.user.set_password(serializer.data['new_password'])
-            self.request.user.save()
-            return Response(
-                {'message': 'Password changed successfully'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        self.request.user.set_password(serializer.data['new_password'])
+        self.request.user.save()
+        return Response(
+            {'message': 'Password changed successfully'},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
     @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
-        queryset = Follow.objects.filter(user=self.request.user)
+        queryset = request.user.follower.all()
         page = self.paginate_queryset(queryset)
         serializer = FollowSerializer(
             page, many=True, context={'request': request}
@@ -72,34 +72,24 @@ class UserViewSet(DjoserViewSet):
     )
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, id=id)
-        follow = Follow.objects.filter(user=request.user, author=author,)
-        if request.method == 'POST':
-            if request.user.id == author.id:
-                return Response(
-                    {'message': 'Unable to subscribe to yourself'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            if follow.exists():
-                return Response(
-                    {'message': 'Already subscribed'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        user = request.user
+        follower = user.follower.filter(author=author)
+        if ((request.method == 'POST') and (user.id != author.id)
+                and not follower.exists()):
             serializer = FollowSerializer(
-                Follow.objects.create(user=request.user, author=author),
+                Follow.objects.create(user=user, author=author),
                 context={'request': request},
             )
             return Response(
                 serializer.data,
                 status=status.HTTP_201_CREATED,
             )
-        elif request.method == 'DELETE':
-            if follow.exists():
-                follow.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response(
-                {'errors': 'No such author in your subscriptions'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if request.method == 'DELETE':
+            get_object_or_404(
+                Follow, user=user, author=author
+            ).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
         return Response(
             {'errors': 'Invalid operation'},
             status=status.HTTP_400_BAD_REQUEST,
@@ -143,13 +133,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.user.is_authenticated:
             queryset = queryset.annotate(
                 is_favorited=Exists(
-                    FavoriteRecipe.objects.filter(
-                        user=self.request.user, recipe=OuterRef('id')
-                    )
+                    self.request.user.favorited.filter(recipe=OuterRef('id'))
                 ),
                 is_in_shopping_cart=Exists(
-                    ShoppingList.objects.filter(
-                        user=self.request.user, recipe=OuterRef('id')
+                    self.request.user.user_shopping_list.filter(
+                        recipe=OuterRef('id')
                     )
                 ),
             )
@@ -179,16 +167,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status.HTTP_201_CREATED,
             )
         if request.method == 'DELETE':
-            favorite_recipe = FavoriteRecipe.objects.filter(
-                user=self.request.user,
-                recipe=recipe
+            get_object_or_404(
+                FavoriteRecipe, user=request.user, recipe=recipe
+            ).delete()
+            return Response(
+                {'errors': 'Recipe has been removed from your favorites'},
+                status=status.HTTP_204_NO_CONTENT
             )
-            if favorite_recipe.exists():
-                favorite_recipe.delete()
-                return Response(
-                    {'errors': 'Recipe has been removed from your favorites'},
-                    status=status.HTTP_204_NO_CONTENT
-                )
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
@@ -205,17 +190,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status.HTTP_201_CREATED,
             )
         if request.method == 'DELETE':
-            shopping_list_item = ShoppingList.objects.filter(
-                user=self.request.user,
-                recipe=recipe
+            get_object_or_404(
+                ShoppingList, user=request.user, recipe=recipe
+            ).delete()
+            return Response(
+                {'errors': ('Recipe has been removed '
+                            'from your shopping list')},
+                status=status.HTTP_204_NO_CONTENT
             )
-            if shopping_list_item.exists():
-                shopping_list_item.delete()
-                return Response(
-                    {'errors': ('Recipe has been removed '
-                                'from your shopping list')},
-                    status=status.HTTP_204_NO_CONTENT
-                )
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(('GET',), detail=False, permission_classes=(IsAuthenticated,))
