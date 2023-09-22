@@ -11,10 +11,6 @@
 ---
 ![Static Badge](https://img.shields.io/badge/python-%25?style=for-the-badge&logo=python&labelColor=FFC436&color=blue) ![Static Badge](https://img.shields.io/badge/django-%25?style=for-the-badge&logo=django&labelColor=116D6E&color=47A992) ![Static Badge](https://img.shields.io/badge/rest_api-%25?style=for-the-badge&logo=rest_api&labelColor=9BABB8&color=9BABB8) ![Static Badge](https://img.shields.io/badge/postgresql-%25?style=for-the-badge&logo=postgresql&labelColor=F5F5F5&color=F5F5F5) ![Static Badge](https://img.shields.io/badge/nginx-%25?style=for-the-badge&logo=nginx&labelColor=16FF00&color=F5F5F5) ![Static Badge](https://img.shields.io/badge/docker-%25?style=for-the-badge&logo=docker&color=2F58CD)
 
-
-
-
-
 ### Описание
 
 Foodgram - продуктовый помощник, где зарегистрированные пользователи могут публиковать свои рецепты. Все опубликованные рецепты доступны на главной странице всем пользователям. Есть возможность подписаться на автора рецепта, после чего все рецепты избранного автора появляются на странице подписок. Также рецепты можно добавить в избранное. Авторизованный пользователь может добавить ингредиенты любого рецепта в список покупок. Количество ингредиентов суммируется. Список можно скачать файлом в формате txt
