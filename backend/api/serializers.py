@@ -4,8 +4,10 @@ from django.core.files.base import ContentFile
 from django.db.transaction import atomic
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+
 from recipes.models import Ingredient, IngredientsInRecipe, Recipe, Tag
 from users.models import Follow, User
+
 
 MIN_VALUE = 1
 MAX_VALUE = 32_000
