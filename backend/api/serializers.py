@@ -39,7 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
-        return obj.follower.exists()
+        return obj.following.filter(user=request.user).exists()
 
     class Meta:
         model = User
