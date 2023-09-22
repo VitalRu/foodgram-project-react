@@ -12,6 +12,12 @@ class RecipeIngredientInline(admin.TabularInline):
     extra = 0
 
 
+class RecipeTagInline(admin.TabularInline):
+    model = TagsInRecipe
+    min_num = 1
+    extra = 0
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('id', 'author', 'name', 'display_tags',
@@ -22,7 +28,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     search_fields = ('name', r'^author__username', r'^tags__name',
                      r'^tags__slug')
-    inlines = (RecipeIngredientInline,)
+    inlines = (RecipeIngredientInline, RecipeTagInline)
 
     def display_tags(self, obj):
         return ', '.join([tag.name for tag in obj.tags.all()])
