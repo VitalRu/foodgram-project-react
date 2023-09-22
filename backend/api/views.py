@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet as DjoserViewSet
-from rest_framework import status, viewsets, exceptions
+from rest_framework import exceptions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
