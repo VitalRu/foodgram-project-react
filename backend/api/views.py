@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet as DjoserViewSet
-from rest_framework import exceptions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
@@ -72,33 +72,24 @@ class UserViewSet(DjoserViewSet):
     )
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, id=id)
-        if request.method == 'POST':
-            if request.user.id == author.id:
-                raise exceptions.ValidationError(
-                    'Unable to subscribe to yourself'
-                )
-            else:
-                serializer = FollowSerializer(
-                    Follow.objects.create(user=request.user, author=author),
-                    context={'request': request},
-                )
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
-        elif request.method == 'DELETE':
-            follow_bm = Follow.objects.filter(
-                user=request.user,
-                author=author,
+        user = request.user
+        follower = user.follower.filter(author=author)
+        if ((request.method == 'POST') and (user.id != author.id)
+                and not follower.exists()):
+            serializer = FollowSerializer(
+                Follow.objects.create(user=user, author=author),
+                context={'request': request},
             )
-            if follow_bm.exists():
-                follow_bm.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                return Response(
-                    {'errors': 'No such author'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED,
+            )
+        if request.method == 'DELETE':
+            get_object_or_404(
+                Follow, user=user, author=author
+            ).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
         return Response(
             {'errors': 'Invalid operation'},
             status=status.HTTP_400_BAD_REQUEST,

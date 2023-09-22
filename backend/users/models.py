@@ -6,6 +6,14 @@ from django.db import models
 class User(AbstractUser):
     """Кастомная модель пользователя."""
 
+    ADMIN = 'admin'
+    MODERATOR = 'moderator'
+    USER = 'user'
+
+    ROLE_CHOICES = (
+        (ADMIN, 'ADMIN'), (USER, 'USER')
+    )
+
     email = models.EmailField('email адрес', unique=True)
     username = models.CharField(
         'имя пользователя',
@@ -16,6 +24,9 @@ class User(AbstractUser):
     first_name = models.CharField('имя', max_length=150)
     last_name = models.CharField('фамилия', max_length=150)
     password = models.CharField('пароль', max_length=150)
+    role = models.CharField(
+        max_length=15, choices=ROLE_CHOICES, default='user'
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'password', 'first_name', 'last_name']
@@ -25,6 +36,10 @@ class User(AbstractUser):
         """Получение полного имени пользователя."""
 
         return f'{self.first_name} {self.last_name}'
+
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
 
     class Meta:
         db_table = 'auth_user'
