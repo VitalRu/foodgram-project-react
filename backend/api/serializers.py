@@ -2,8 +2,9 @@ import base64
 
 from django.core.files.base import ContentFile
 from django.db.transaction import atomic
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.validators import UniqueTogetherValidator
+from rest_framework.exceptions import ValidationError
 
 from recipes.models import Ingredient, IngredientsInRecipe, Recipe, Tag
 from users.models import Follow, User
@@ -47,43 +48,68 @@ class UserSerializer(serializers.ModelSerializer):
                   'is_subscribed')
 
 
-class FollowSerializer(serializers.ModelSerializer):
-    email = serializers.ReadOnlyField(source='author.email')
-    id = serializers.ReadOnlyField(source='author.id')
-    username = serializers.ReadOnlyField(source='author.username')
-    first_name = serializers.ReadOnlyField(source='author.first_name')
-    last_name = serializers.ReadOnlyField(source='author.last_name')
+class FollowRepresentationSerializer(serializers.ModelSerializer):
+    email = serializers.ReadOnlyField()
+    id = serializers.ReadOnlyField()
+    username = serializers.ReadOnlyField()
+    first_name = serializers.ReadOnlyField()
+    last_name = serializers.ReadOnlyField()
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = Follow
+        model = User
         fields = (
             'email', 'id', 'username', 'first_name', 'last_name',
             'is_subscribed', 'recipes', 'recipes_count'
-        )
-
-        validators = (
-            UniqueTogetherValidator(
-                queryset=Follow.objects.all(),
-                fields=('user', 'author')
-            ),
         )
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
-        return obj.user.follower.exists()
+        return obj.follower.exists()
 
     def get_recipes(self, obj):
-        queryset = obj.author.recipe.all()
+        queryset = obj.recipe.all()
         serializer = RecipeInfoSerializer(queryset, many=True)
         return serializer.data
 
     def get_recipes_count(self, obj):
-        return obj.author.recipe.count()
+        return obj.recipe.count()
+
+
+class FollowSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Follow
+        fields = ('user', 'author')
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        return FollowRepresentationSerializer(
+            instance.author, context={'request': request}
+        ).data
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        author = validated_data['author']
+
+        if user.follower.filter(author=author).exists():
+            raise ValidationError(
+                'Already subscribed',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+
+        if user == author:
+            raise ValidationError(
+                'Unable to subscribe to yourself',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+
+        follow = Follow.objects.create(user=user, author=author)
+        return follow
 
 
 class IngredientSerializer(serializers.ModelSerializer):

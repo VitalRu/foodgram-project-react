@@ -70,30 +70,20 @@ class UserViewSet(DjoserViewSet):
     @action(
         ('POST', 'DELETE'), detail=True, permission_classes=(IsAuthenticated,)
     )
-    def subscribe(self, request, id=None):
+    def subscribe(self, request, id):
         author = get_object_or_404(User, id=id)
         user = request.user
-        follower = user.follower.filter(author=author)
-        if ((request.method == 'POST') and (user.id != author.id)
-                and not follower.exists()):
+        if request.method == 'POST':
             serializer = FollowSerializer(
-                Follow.objects.create(user=user, author=author),
-                context={'request': request},
+                data={'user': user.id, 'author': author.id},
+                context={'request': request}
             )
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED,
-            )
+            serializer.is_valid()
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         if request.method == 'DELETE':
-            get_object_or_404(
-                Follow, user=user, author=author
-            ).delete()
+            get_object_or_404(Follow, user=user, author=author).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(
-            {'errors': 'Invalid operation'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
