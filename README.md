@@ -1,13 +1,8 @@
 # foodgram
 
 
-- Проект развернут здесь https://foodram.ru
+### Проект развернут здесь https://foodram.ru
 
-- IP - 158.160.73.228
-
-- доступ к админ-панели
-  - логин admin@example.com
-  - пароль superadmin
 ---
 ![Static Badge](https://img.shields.io/badge/python-%25?style=for-the-badge&logo=python&labelColor=FFC436&color=blue) ![Static Badge](https://img.shields.io/badge/django-%25?style=for-the-badge&logo=django&labelColor=116D6E&color=47A992) ![Static Badge](https://img.shields.io/badge/rest_api-%25?style=for-the-badge&logo=rest_api&labelColor=9BABB8&color=9BABB8) ![Static Badge](https://img.shields.io/badge/postgresql-%25?style=for-the-badge&logo=postgresql&labelColor=F5F5F5&color=F5F5F5) ![Static Badge](https://img.shields.io/badge/nginx-%25?style=for-the-badge&logo=nginx&labelColor=16FF00&color=F5F5F5) ![Static Badge](https://img.shields.io/badge/docker-%25?style=for-the-badge&logo=docker&color=2F58CD)
 
